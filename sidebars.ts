@@ -22,6 +22,7 @@ const sidebars: SidebarsConfig = {
         'guides/python-sdk',
         'guides/typescript-sdk',
         'guides/framework-integration',
+        'guides/examples',
       ],
     },
     'api-reference',
