@@ -3,17 +3,15 @@ sidebar_position: 1
 slug: /
 ---
 
-# Roche
+# What is Roche?
 
-**Universal sandbox orchestrator for AI agents.**
-
-Roche provides a single abstraction (`create` / `exec` / `destroy`) over multiple sandbox providers with **AI-optimized security defaults** — network disabled, filesystem readonly, timeout enforced.
+**Roche** is a universal sandbox orchestrator for AI agents. It provides a single abstraction (`create` / `exec` / `destroy`) over multiple sandbox providers with **AI-optimized security defaults** — network disabled, filesystem readonly, timeout enforced.
 
 > Named after [Édouard Roche](https://en.wikipedia.org/wiki/%C3%89douard_Roche) — the Roche limit is the inviolable physical boundary for celestial bodies; Roche is the inviolable execution boundary for code.
 
 ## The Problem
 
-Every agent framework independently integrates sandbox providers, creating N×M complexity:
+Every AI agent framework independently integrates sandbox providers, creating an N×M complexity problem:
 
 ```
 LangChain ──┐         ┌── Docker
@@ -21,7 +19,7 @@ CrewAI   ───┤  N × M  ├── E2B
 AutoGen  ───┘         └── Modal
 ```
 
-Roche reduces this to N + M:
+Roche reduces this to N+M:
 
 ```
 LangChain ──┐              ┌── Docker
@@ -29,33 +27,41 @@ CrewAI   ───┤── Roche() ───├── Firecracker
 AutoGen  ───┘              └── WASM
 ```
 
+## Features
+
+- **AI-safe defaults** — network off, readonly filesystem, 300s timeout
+- **Multi-provider** — Docker, Firecracker, WASM behind a unified API
+- **CLI + SDKs** — `roche` binary + Python & TypeScript SDKs
+- **Framework-agnostic** — works with LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Anthropic API, Camel-AI
+- **Zero config** — sensible defaults, opt-in for permissions
+
+## Quick Example
+
+```python
+from roche_sandbox import Roche
+
+roche = Roche()
+
+with roche.create(image="python:3.12-slim") as sandbox:
+    output = sandbox.exec(["python3", "-c", "print('Hello from Roche!')"])
+    print(output.stdout)  # Hello from Roche!
+# sandbox auto-destroyed
+```
+
 ## Relationship to Castor
 
-Castor and Roche are **orthogonal** — they solve different layers of the security stack:
+[Castor](https://substratum-labs.github.io/castor-docs/) and Roche are **orthogonal** — they solve different layers of the AI agent security stack:
 
 | Layer | Tool | Purpose |
 |-------|------|---------|
-| Logical | **Castor** | Capability budgets, HITL, checkpoint/replay |
+| Logical | **Castor** | Capability budgets, HITL approval, checkpoint/replay |
 | Physical | **Roche** | Process/container/VM isolation |
 
-Operators can optionally use Roche to manage sandbox environments for Castor tool servers. Castor does not depend on Roche.
+Operators can use both, either, or neither. Castor manages *what tools an agent can call*. Roche manages *what system resources that code can access*.
 
-## Quick Start
+## Next Steps
 
-```bash
-# Create a sandbox (network off, readonly FS by default)
-roche create --provider docker --memory 512m
-
-# Execute code
-roche exec --sandbox <id> python3 -c "print('hello')"
-
-# Destroy
-roche destroy <id>
-
-# List active sandboxes
-roche list
-```
-
-## Status
-
-Roche is in early development. See the [GitHub repo](https://github.com/substratum-labs/roche) for progress.
+- [Installation](./getting-started/installation) — install the CLI and SDKs
+- [Quickstart](./getting-started/quickstart) — create and run a sandbox in 2 minutes
+- [Core Concepts](./getting-started/concepts) — understand providers, security defaults, and transport
+- [Framework Integration](./guides/framework-integration) — use Roche with your agent framework

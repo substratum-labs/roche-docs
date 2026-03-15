@@ -30,6 +30,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
+          routeBasePath: '/',
           editUrl: 'https://github.com/substratum-labs/roche-docs/edit/main/',
         },
         blog: false,
@@ -55,6 +56,11 @@ const config: Config = {
           label: 'Docs',
         },
         {
+          to: '/api-reference',
+          label: 'API Reference',
+          position: 'left',
+        },
+        {
           href: 'https://github.com/substratum-labs/roche',
           label: 'GitHub',
           position: 'right',
@@ -67,15 +73,34 @@ const config: Config = {
         {
           title: 'Documentation',
           items: [
-            {label: 'Getting Started', to: '/docs/getting-started'},
-            {label: 'Architecture', to: '/docs/architecture'},
+            {label: 'Getting Started', to: '/getting-started/quickstart'},
+            {label: 'Architecture', to: '/architecture/overview'},
+            {label: 'Framework Integration', to: '/guides/framework-integration'},
+            {label: 'API Reference', to: '/api-reference'},
+          ],
+        },
+        {
+          title: 'SDKs',
+          items: [
+            {
+              label: 'Python (PyPI)',
+              href: 'https://pypi.org/project/roche-sandbox/',
+            },
+            {
+              label: 'TypeScript (npm)',
+              href: 'https://www.npmjs.com/package/roche-sandbox',
+            },
+            {
+              label: 'Rust (crates.io)',
+              href: 'https://crates.io/crates/roche-core',
+            },
           ],
         },
         {
           title: 'Ecosystem',
           items: [
             {
-              label: 'Castor',
+              label: 'Castor (Security Kernel)',
               href: 'https://substratum-labs.github.io/castor-docs/',
             },
             {
@@ -90,7 +115,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
-      additionalLanguages: ['rust', 'python', 'toml', 'bash'],
+      additionalLanguages: ['rust', 'python', 'toml', 'bash', 'typescript'],
     },
   } satisfies Preset.ThemeConfig,
 };
