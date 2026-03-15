@@ -32,7 +32,7 @@ Frameworks integrate once with Roche. Roche handles the provider abstraction int
 ## Features
 
 - **AI-safe defaults** — network off, readonly filesystem, 300s timeout
-- **Multi-provider** — Docker (stable), Firecracker, WASM (planned)
+- **Multi-provider** — Docker, Firecracker, WASM
 - **CLI + SDKs** — `roche` binary + Python & TypeScript SDKs
 - **Resource limits** — memory, CPU, PID limits, timeout enforcement
 - **Zero config** — sensible defaults, opt-in for dangerous capabilities

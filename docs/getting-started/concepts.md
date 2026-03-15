@@ -29,8 +29,8 @@ A **provider** is a sandbox backend. Roche abstracts over multiple providers thr
 | Provider | Isolation Level | Status | Use Case |
 |----------|----------------|--------|----------|
 | **Docker** | Container | Stable | General purpose, development, CI |
-| **Firecracker** | MicroVM | Planned | Production, multi-tenant, strong isolation |
-| **WASM** | Language sandbox | Planned | Ultra-fast startup, lightweight tasks |
+| **Firecracker** | MicroVM | Stable | Production, multi-tenant, strong isolation |
+| **WASM** | Language sandbox | Stable | Ultra-fast startup, lightweight tasks |
 
 All providers implement the same interface. Switching providers is a one-line change:
 

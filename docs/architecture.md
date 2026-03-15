@@ -16,8 +16,10 @@ roche/
 │   │       ├── lib.rs
 │   │       ├── types.rs     # SandboxConfig, ExecOutput, etc.
 │   │       └── provider/
-│   │           ├── mod.rs   # SandboxProvider trait + ProviderError
-│   │           └── docker.rs
+│   │           ├── mod.rs          # SandboxProvider trait + ProviderError
+│   │           ├── docker.rs       # Docker provider (container isolation)
+│   │           ├── firecracker/    # Firecracker provider (microVM isolation)
+│   │           └── wasm/           # WASM provider (wasmtime + WASI)
 │   └── roche-cli/           # Binary: clap CLI
 │       └── src/
 │           └── main.rs      # create/exec/destroy/list/gc subcommands
@@ -110,8 +112,8 @@ Auto-detection (`mode="auto"`) tries gRPC first, falls back to CLI.
 ```
 Castor (logical security)        Roche (physical security)
 ├── Capability budgets           ├── Docker provider
-├── HITL approval                ├── Firecracker provider (planned)
-├── Checkpoint/replay            └── WASM provider (planned)
+├── HITL approval                ├── Firecracker provider
+├── Checkpoint/replay            └── WASM provider
 └── Context window management
 ```
 

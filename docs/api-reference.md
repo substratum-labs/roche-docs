@@ -333,5 +333,5 @@ pub enum ProviderError {
 | Provider | Struct | Status |
 |----------|--------|--------|
 | Docker | `docker::DockerProvider` | Stable |
-| Firecracker | `firecracker::FirecrackerProvider` | Planned |
-| WASM | `wasm::WasmProvider` | Planned |
+| Firecracker | `firecracker::FirecrackerProvider` | Stable |
+| WASM | `wasm::WasmProvider` | Stable (feature: `wasmtime`) |

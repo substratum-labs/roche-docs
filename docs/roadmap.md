@@ -10,7 +10,7 @@ Docker provider, CLI, and Python SDK are fully functional.
 
 | Milestone | Status | Features |
 |---|---|---|
-| Docker provider | Complete | create, exec, destroy, list via Docker CLI |
+| Docker provider | Complete | create, exec, destroy, list, pause, unpause, copy, gc |
 | CLI | Complete | AI-safe defaults, resource limits, `gc` subcommand |
 | Python SDK | Complete | Sync + async clients, context manager, gRPC + CLI transport |
 | TypeScript SDK | Complete | Promise-based API, `using` support, gRPC + CLI transport |
@@ -18,19 +18,19 @@ Docker provider, CLI, and Python SDK are fully functional.
 | Agent framework examples | Complete | OpenAI, LangChain, CrewAI, Anthropic, AutoGen, Camel-AI |
 | crates.io / PyPI publish | Complete | `roche-core`, `roche-cli` on crates.io; `roche-sandbox` on PyPI |
 
-## Phase 2: Multi-Provider (Planned)
+## Phase 2: Multi-Provider (Complete)
 
-| Component | Priority | Description |
+| Milestone | Status | Features |
 |---|---|---|
-| Enhanced Docker | High | Docker Engine API (replace CLI subprocess), connection pooling |
-| Firecracker provider | High | MicroVM-level isolation for production multi-tenant deployments |
-| WASM provider | Medium | Wasmtime-based sandboxes for ultra-fast startup |
-| Sandbox pooling | Medium | Pre-warmed sandbox pool to reduce cold-start latency |
+| Enhanced Docker | Complete | File transfer, volume mounts, pause/unpause, timeout GC, batch ops |
+| Firecracker provider | Complete | MicroVM isolation via KVM, vsock exec, state directory management |
+| WASM provider | Complete | Wasmtime + WASI, AOT compilation, in-memory sandbox registry |
 
 ## Phase 3: Ecosystem (Planned)
 
 | Component | Priority | Description |
 |---|---|---|
+| Sandbox pooling | High | Pre-warmed sandbox pool to reduce cold-start latency |
 | E2B provider | Medium | Cloud-hosted Firecracker sandbox compatibility |
 | Kubernetes provider | Medium | Pod-based sandboxes for K8s infrastructure |
 | GPU support | Low | GPU passthrough for ML workloads |
