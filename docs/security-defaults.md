@@ -10,19 +10,22 @@ Roche is designed for AI agent workloads where **untrusted code execution is the
 
 | Setting | Default | Override | Rationale |
 |---------|---------|----------|-----------|
-| Network | **disabled** | `--network` | Prevent data exfiltration |
-| Filesystem | **readonly** | `--writable` | Prevent persistent compromise |
-| Timeout | **300s** | `--timeout <secs>` | Prevent runaway processes |
+| Network | **disabled** | `--network` | Prevent data exfiltration and C2 communication |
+| Filesystem | **readonly** | `--writable` | Prevent persistent compromise and file tampering |
+| Timeout | **300s** | `--timeout <secs>` | Prevent resource exhaustion and infinite loops |
+| PID limit | **256** | — | Prevent fork bombs |
+| Privileges | **no-new-privileges** | — | Prevent privilege escalation |
 | Image | `python:3.12-slim` | `--image <img>` | Minimal attack surface |
 
 ## Comparison with Alternatives
 
 | Aspect | Roche | E2B | Direct Docker |
 |--------|-------|-----|---------------|
-| Providers | Multiple | Firecracker only | Docker only |
-| Deployment | Local-first | Cloud-first | Local |
-| Security defaults | AI-optimized | Generic | Insecure defaults |
-| Framework coupling | None | E2B SDK | None |
+| Providers | Multiple (Docker, Firecracker, WASM) | Firecracker only | Docker only |
+| Deployment | Local-first, no cloud dependency | Cloud-first, requires internet | Local |
+| Security defaults | AI-optimized (deny-by-default) | Generic | Insecure defaults |
+| Framework coupling | None — framework-agnostic | E2B SDK required | None |
+| Open source | Apache-2.0 | Open source | Open source |
 
 ## Design Philosophy
 
@@ -32,3 +35,5 @@ Capabilities must be **explicitly granted**, never implicitly available:
 - Need network? Say so: `--network`
 - Need to write files? Say so: `--writable`
 - Need more time? Say so: `--timeout 600`
+
+This is the opposite of typical Docker defaults, where network access and writable filesystems are enabled by default. For AI agent workloads, the safe default is to deny everything and require explicit opt-in.

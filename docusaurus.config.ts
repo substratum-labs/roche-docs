@@ -55,6 +55,11 @@ const config: Config = {
           label: 'Docs',
         },
         {
+          to: '/docs/api-reference',
+          label: 'API Reference',
+          position: 'left',
+        },
+        {
           href: 'https://github.com/substratum-labs/roche',
           label: 'GitHub',
           position: 'right',
@@ -67,8 +72,26 @@ const config: Config = {
         {
           title: 'Documentation',
           items: [
-            {label: 'Getting Started', to: '/docs/getting-started'},
+            {label: 'Getting Started', to: '/docs/getting-started/quickstart'},
             {label: 'Architecture', to: '/docs/architecture'},
+            {label: 'API Reference', to: '/docs/api-reference'},
+          ],
+        },
+        {
+          title: 'SDKs',
+          items: [
+            {
+              label: 'PyPI (roche-sandbox)',
+              href: 'https://pypi.org/project/roche-sandbox/',
+            },
+            {
+              label: 'npm (roche-sandbox)',
+              href: 'https://www.npmjs.com/package/roche-sandbox',
+            },
+            {
+              label: 'crates.io (roche-core)',
+              href: 'https://crates.io/crates/roche-core',
+            },
           ],
         },
         {
@@ -90,7 +113,7 @@ const config: Config = {
     prism: {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
-      additionalLanguages: ['rust', 'python', 'toml', 'bash'],
+      additionalLanguages: ['rust', 'python', 'toml', 'bash', 'typescript'],
     },
   } satisfies Preset.ThemeConfig,
 };
