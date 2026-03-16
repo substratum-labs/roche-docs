@@ -84,7 +84,8 @@ roche gc [OPTIONS]
 ## Python SDK
 
 ```bash
-pip install roche-sandbox
+pip install roche-sandbox          # SDK only
+pip install roche-sandbox[cli]     # SDK + prebuilt CLI binary
 ```
 
 ### `Roche` (sync client)
@@ -183,6 +184,47 @@ Async equivalent of `Sandbox`. Supports `async with`.
 ```python
 async with await roche.create(image="python:3.12-slim") as sandbox:
     output = await sandbox.exec(["echo", "hello"])
+```
+
+---
+
+### `@roche_sandbox` Decorator
+
+Auto-creates a sandbox and injects it into the decorated function. The sandbox is destroyed after the function returns (or raises).
+
+```python
+from roche_sandbox import roche_sandbox
+
+@roche_sandbox(image="python:3.12-slim")
+def run_code(code: str, sandbox) -> str:
+    return sandbox.exec(["python3", "-c", code]).stdout
+
+output = run_code("print('hello')")  # sandbox is auto-managed
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `image` | `str` | `"python:3.12-slim"` | Container image |
+| `provider` | `str` | `"docker"` | Sandbox provider |
+| `network` | `bool` | `False` | Enable network access |
+| `writable` | `bool` | `False` | Enable writable filesystem |
+| `timeout_secs` | `int` | `300` | Sandbox timeout |
+| `memory` | `str \| None` | `None` | Memory limit |
+| `cpus` | `float \| None` | `None` | CPU limit |
+| `sandbox_param` | `str` | `"sandbox"` | Name of the injected parameter |
+
+**Behavior:**
+
+- Detects sync vs async functions automatically — uses `Roche` or `AsyncRoche` accordingly.
+- Strips the `sandbox` parameter from `__signature__` so agent framework introspection (e.g. OpenAI `@function_tool`, LangChain `@tool`) does not expose it as a user-facing argument.
+- Stacks with framework decorators:
+
+```python
+@function_tool
+@roche_sandbox(image="python:3.12-slim")
+def run_code(code: str, sandbox) -> str:
+    """Execute Python code safely."""
+    return sandbox.exec(["python3", "-c", code]).stdout
 ```
 
 ---

@@ -9,10 +9,11 @@ The Python SDK provides both sync and async APIs for managing Roche sandboxes.
 ## Installation
 
 ```bash
-pip install roche-sandbox
+pip install roche-sandbox          # SDK only (requires Roche CLI installed separately)
+pip install roche-sandbox[cli]     # SDK + auto-download prebuilt CLI binary
 ```
 
-Requires Python >= 3.10 and either the Roche CLI on `PATH` or the Roche daemon running.
+Requires Python >= 3.10.
 
 ## Sync API
 
@@ -92,6 +93,57 @@ asyncio.run(main())
 The sync `Roche`/`Sandbox` classes use `asyncio.run()` internally. They **cannot** be used inside an already-running event loop. If your framework is async (OpenAI Agents SDK, LangGraph async mode), use `AsyncRoche`/`AsyncSandbox` instead.
 :::
 
+## `@roche_sandbox` Decorator
+
+The decorator automatically creates and injects a sandbox into your function — no manual lifecycle management needed. Works with both sync and async functions.
+
+```python
+from roche_sandbox import roche_sandbox
+
+@roche_sandbox(image="python:3.12-slim")
+def run_code(code: str, sandbox) -> str:
+    result = sandbox.exec(["python3", "-c", code])
+    return result.stdout
+
+output = run_code("print('hello')")  # sandbox is auto-managed
+```
+
+### Async
+
+```python
+@roche_sandbox(image="python:3.12-slim")
+async def run_code(code: str, sandbox) -> str:
+    result = await sandbox.exec(["python3", "-c", code])
+    return result.stdout
+```
+
+### Agent Framework Integration
+
+The decorator strips the `sandbox` parameter from the function signature, so agent frameworks only see user-facing parameters:
+
+```python
+from agents import function_tool
+
+@function_tool
+@roche_sandbox(image="python:3.12-slim")
+def run_code(code: str, sandbox) -> str:
+    """Execute Python code in a sandbox."""
+    return sandbox.exec(["python3", "-c", code]).stdout
+```
+
+### Decorator Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `image` | `str` | `"python:3.12-slim"` | Container image |
+| `provider` | `str` | `"docker"` | Sandbox provider |
+| `network` | `bool` | `False` | Enable network access |
+| `writable` | `bool` | `False` | Enable writable filesystem |
+| `timeout_secs` | `int` | `300` | Sandbox timeout |
+| `memory` | `str \| None` | `None` | Memory limit (e.g. `"512m"`) |
+| `cpus` | `float \| None` | `None` | CPU limit |
+| `sandbox_param` | `str` | `"sandbox"` | Name of the injected parameter |
+
 ## Transport
 
 The SDK auto-detects the best transport:
@@ -162,6 +214,8 @@ from roche_sandbox import (
     Roche, AsyncRoche,
     # Sandbox handles
     Sandbox, AsyncSandbox,
+    # Decorator
+    roche_sandbox,
     # Types
     SandboxConfig, ExecOutput, SandboxInfo, Mount, SandboxStatus,
     # Errors

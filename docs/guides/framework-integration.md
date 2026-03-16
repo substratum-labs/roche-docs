@@ -208,9 +208,62 @@ Use with `ChatAgent` or in `RolePlaying` sessions.
 **Env var:** `OPENAI_API_KEY`
 **Examples:** [`examples/python/camel/`](https://github.com/substratum-labs/roche/tree/main/examples/python/camel)
 
+## Using the `@roche_sandbox` Decorator
+
+Instead of manually managing sandbox lifecycle, use the `@roche_sandbox` decorator. It auto-creates and destroys a sandbox, and strips the `sandbox` parameter from the function signature so frameworks don't see it.
+
+### OpenAI Agents SDK
+
+```python
+from agents import Agent, Runner, function_tool
+from roche_sandbox import roche_sandbox
+
+@function_tool
+@roche_sandbox(image="python:3.12-slim")
+async def execute_code(code: str, sandbox) -> str:
+    """Execute Python code in a secure sandbox."""
+    result = await sandbox.exec(["python3", "-c", code])
+    return result.stdout.strip() if result.exit_code == 0 else result.stderr.strip()
+
+agent = Agent(name="Coder", tools=[execute_code])
+```
+
+### LangChain
+
+```python
+from langchain_core.tools import tool
+from roche_sandbox import roche_sandbox
+
+@tool
+@roche_sandbox(image="python:3.12-slim")
+def sandbox_execute(code: str, sandbox) -> str:
+    """Execute Python code in a secure Roche sandbox."""
+    result = sandbox.exec(["python3", "-c", code])
+    return result.stdout.strip() if result.exit_code == 0 else result.stderr.strip()
+```
+
+### CrewAI
+
+```python
+from crewai.tools import tool
+from roche_sandbox import roche_sandbox
+
+@tool("sandbox_execute")
+@roche_sandbox(image="python:3.12-slim")
+def sandbox_execute(code: str, sandbox) -> str:
+    """Execute Python code in a secure Roche sandbox."""
+    result = sandbox.exec(["python3", "-c", code])
+    return result.stdout.strip() if result.exit_code == 0 else result.stderr.strip()
+```
+
+:::tip
+The decorator approach eliminates boilerplate `try/finally` blocks. For simple one-shot tools, it's the recommended pattern.
+:::
+
 ## Sandbox Lifecycle Tips
 
-- **Basic tools:** Create sandbox per call, destroy in `finally`. Simple and safe.
+- **Simple tools:** Use `@roche_sandbox` decorator — zero boilerplate.
+- **Basic tools (manual):** Create sandbox per call, destroy in `finally`. Simple and safe.
 - **Multi-step workflows:** Create sandbox once, reuse across calls, destroy at end. Better performance.
 - **Async frameworks:** Use `AsyncRoche`/`AsyncSandbox` to avoid `asyncio.run()` conflicts.
 - **File I/O:** Use `copy_to`/`copy_from` to transfer data in and out of the sandbox.

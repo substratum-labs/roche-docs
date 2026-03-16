@@ -28,10 +28,18 @@ roche --help
 ## Python SDK
 
 ```bash
-pip install roche-sandbox
+pip install roche-sandbox          # SDK only (requires Roche CLI installed separately)
+pip install roche-sandbox[cli]     # SDK + auto-download prebuilt CLI binary
 ```
 
-Requires Python >= 3.10 and Roche CLI on `PATH` (or the Roche daemon running).
+If you installed without `[cli]`, you can download the CLI later:
+
+```bash
+roche-install-cli                  # downloads from GitHub Releases
+cargo install roche-cli            # or build from source
+```
+
+Requires Python >= 3.10.
 
 ```python
 from roche_sandbox import Roche
