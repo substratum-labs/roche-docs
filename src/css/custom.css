@@ -7,7 +7,9 @@
   --ifm-color-primary-lighter: #d36a3f;
   --ifm-color-primary-lightest: #db7f5a;
   --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --docusaurus-highlighted-code-line-bg: rgba(196, 90, 44, 0.1);
+  --ifm-font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
+  --ifm-heading-font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 [data-theme='dark'] {
@@ -18,5 +20,27 @@
   --ifm-color-primary-light: #de845a;
   --ifm-color-primary-lighter: #e08c62;
   --ifm-color-primary-lightest: #e8a583;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --docusaurus-highlighted-code-line-bg: rgba(216, 115, 74, 0.15);
+}
+
+/* Hero section styling */
+.hero--primary {
+  background: linear-gradient(135deg, #893f1e 0%, #c45a2c 50%, #e8845a 100%);
+}
+
+[data-theme='dark'] .hero--primary {
+  background: linear-gradient(135deg, #4a2010 0%, #893f1e 50%, #a64d25 100%);
+}
+
+/* Feature section */
+.features-section {
+  padding: 4rem 0;
+}
+
+/* Code block accent */
+.docusaurus-highlight-code-line {
+  background-color: rgba(196, 90, 44, 0.1);
+  display: block;
+  margin: 0 calc(-1 * var(--ifm-pre-padding));
+  padding: 0 var(--ifm-pre-padding);
 }

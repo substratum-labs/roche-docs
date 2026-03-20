@@ -30,7 +30,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          routeBasePath: '/',
+          routeBasePath: 'docs',
           editUrl: 'https://github.com/substratum-labs/roche-docs/edit/main/',
         },
         blog: false,
@@ -56,7 +56,7 @@ const config: Config = {
           label: 'Docs',
         },
         {
-          to: '/api-reference',
+          to: '/docs/api-reference',
           label: 'API Reference',
           position: 'left',
         },
@@ -73,10 +73,10 @@ const config: Config = {
         {
           title: 'Documentation',
           items: [
-            {label: 'Getting Started', to: '/getting-started/quickstart'},
-            {label: 'Architecture', to: '/architecture/overview'},
-            {label: 'Framework Integration', to: '/guides/framework-integration'},
-            {label: 'API Reference', to: '/api-reference'},
+            {label: 'Getting Started', to: '/docs/getting-started/quickstart'},
+            {label: 'Architecture', to: '/docs/architecture/overview'},
+            {label: 'Framework Integration', to: '/docs/guides/framework-integration'},
+            {label: 'API Reference', to: '/docs/api-reference'},
           ],
         },
         {
