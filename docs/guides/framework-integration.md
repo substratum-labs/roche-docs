@@ -4,266 +4,173 @@ sidebar_position: 3
 
 # Framework Integration
 
-Roche integrates with all major AI agent frameworks as a secure code execution backend. Each integration follows the same pattern: wrap Roche sandbox operations as a framework-native tool.
+Roche is framework-agnostic — it works with any AI agent framework. This guide shows integration patterns for the six supported frameworks.
 
-## Integration Pattern
-
-```
-Agent Framework
-    │
-    └── Tool: "execute_code"
-         │
-         └── Roche Sandbox
-              ├── create (or reuse)
-              ├── exec(["python3", "-c", code])
-              └── return stdout/stderr
-```
-
-All examples below run in **simulated mode** by default (no API key needed) and switch to real LLM calls when the appropriate environment variable is set.
+All examples run in **simulated mode** by default (no API key needed). Set the appropriate env var to enable real LLM calls.
 
 ## OpenAI Agents SDK
 
-Wrap Roche as a `@function_tool`:
+Use Roche as a `@function_tool` that agents can call to execute code:
 
 ```python
-from agents import Agent, Runner, function_tool
-from roche_sandbox import AsyncRoche
+from roche_sandbox import Roche
 
-@function_tool
-async def execute_code(code: str) -> str:
-    """Execute Python code in a secure sandbox."""
-    roche = AsyncRoche()
-    sandbox = await roche.create(image="python:3.12-slim")
-    try:
-        result = await sandbox.exec(["python3", "-c", code])
-        return result.stdout.strip() if result.exit_code == 0 else result.stderr.strip()
-    finally:
-        await sandbox.destroy()
+roche = Roche()
 
-agent = Agent(name="Coder", tools=[execute_code])
-result = await Runner.run(agent, "Calculate fibonacci(10)")
+def run_code_in_sandbox(code: str) -> str:
+    """Execute Python code in a Roche sandbox."""
+    with roche.create(image="python:3.12-slim") as sandbox:
+        output = sandbox.exec(["python3", "-c", code])
+        if output.exit_code != 0:
+            return f"Error:\n{output.stderr}"
+        return output.stdout
 ```
 
-:::note
-OpenAI Agents SDK is async — use `AsyncRoche`, not `Roche`.
-:::
-
-**Env var:** `OPENAI_API_KEY`
-**Examples:** [`examples/python/openai-agents/`](https://github.com/substratum-labs/roche/tree/main/examples/python/openai-agents)
+```bash
+pip install openai-agents roche-sandbox
+OPENAI_API_KEY=sk-... python examples/python/openai-agents/basic_tool.py
+```
 
 ## LangChain / LangGraph
 
-Use the `@tool` decorator or subclass `BaseTool`:
+Create a custom `BaseTool` or use Roche in a LangGraph workflow with stateful retry:
 
 ```python
-from langchain_core.tools import tool
 from roche_sandbox import Roche
+from langchain_core.tools import BaseTool
 
-@tool
-def sandbox_execute(code: str) -> str:
-    """Execute Python code in a secure Roche sandbox."""
-    roche = Roche()
-    sandbox = roche.create(image="python:3.12-slim")
-    try:
-        result = sandbox.exec(["python3", "-c", code])
-        return result.stdout.strip() if result.exit_code == 0 else result.stderr.strip()
-    finally:
-        sandbox.destroy()
+class RocheSandboxTool(BaseTool):
+    name = "sandbox"
+    description = "Execute code in a secure sandbox"
+
+    def _run(self, code: str) -> str:
+        roche = Roche()
+        with roche.create(image="python:3.12-slim") as sandbox:
+            output = sandbox.exec(["python3", "-c", code])
+            return output.stdout if output.exit_code == 0 else output.stderr
 ```
 
-For stateful workflows, use LangGraph's `StateGraph` to build code-execute-retry loops:
-
-```python
-from langgraph.graph import StateGraph, END
-
-graph = StateGraph(AgentState)
-graph.add_node("generate", generate_code)
-graph.add_node("execute", execute_in_sandbox)
-graph.add_conditional_edges("execute", should_retry, {"retry": "generate", "done": END})
+```bash
+pip install langchain langchain-openai langgraph roche-sandbox
+OPENAI_API_KEY=sk-... python examples/python/langchain/basic_tool.py
 ```
-
-**Env var:** `OPENAI_API_KEY`
-**Examples:** [`examples/python/langchain/`](https://github.com/substratum-labs/roche/tree/main/examples/python/langchain)
 
 ## CrewAI
 
-Use the `@tool` decorator:
+Use the `@tool` decorator to make Roche available to CrewAI agents:
 
 ```python
-from crewai import Agent, Crew, Task
 from crewai.tools import tool
 from roche_sandbox import Roche
 
-@tool("sandbox_execute")
-def sandbox_execute(code: str) -> str:
-    """Execute Python code in a secure Roche sandbox."""
-    roche = Roche()
-    sandbox = roche.create(image="python:3.12-slim")
-    try:
-        result = sandbox.exec(["python3", "-c", code])
-        return result.stdout.strip() if result.exit_code == 0 else result.stderr.strip()
-    finally:
-        sandbox.destroy()
+roche = Roche()
 
-developer = Agent(role="Coder", tools=[sandbox_execute], ...)
-task = Task(description="Find primes under 50", agent=developer, ...)
-crew = Crew(agents=[developer], tasks=[task])
-crew.kickoff()
+@tool("sandbox_executor")
+def execute_code(code: str) -> str:
+    """Execute Python code in a secure Roche sandbox."""
+    with roche.create(image="python:3.12-slim") as sandbox:
+        output = sandbox.exec(["python3", "-c", code])
+        return output.stdout if output.exit_code == 0 else output.stderr
 ```
 
-**Env var:** `OPENAI_API_KEY`
-**Examples:** [`examples/python/crewai/`](https://github.com/substratum-labs/roche/tree/main/examples/python/crewai)
+```bash
+pip install crewai roche-sandbox
+OPENAI_API_KEY=sk-... python examples/python/crewai/basic_task.py
+```
 
 ## Anthropic API
 
-Define a tool schema and handle `tool_use` blocks:
+Use Roche as a `tool_use` tool in a multi-turn agentic loop:
 
 ```python
-import anthropic
 from roche_sandbox import Roche
 
-TOOL = {
+roche = Roche()
+
+# Define the tool for Claude
+sandbox_tool = {
     "name": "execute_code",
-    "description": "Execute Python code in a secure sandbox.",
+    "description": "Execute Python code in a secure sandbox",
     "input_schema": {
         "type": "object",
-        "properties": {"code": {"type": "string"}},
-        "required": ["code"],
-    },
+        "properties": {
+            "code": {"type": "string", "description": "Python code to execute"}
+        },
+        "required": ["code"]
+    }
 }
 
-client = anthropic.Anthropic()
-response = client.messages.create(
-    model="claude-sonnet-4-20250514",
-    tools=[TOOL],
-    messages=[{"role": "user", "content": "Calculate 2^10 with Python"}],
-)
-
-for block in response.content:
-    if block.type == "tool_use":
-        roche = Roche()
-        sandbox = roche.create(image="python:3.12-slim")
-        try:
-            result = sandbox.exec(["python3", "-c", block.input["code"]])
-            print(result.stdout)
-        finally:
-            sandbox.destroy()
+def handle_tool_call(code: str) -> str:
+    with roche.create(image="python:3.12-slim") as sandbox:
+        output = sandbox.exec(["python3", "-c", code])
+        return output.stdout if output.exit_code == 0 else output.stderr
 ```
 
-**Env var:** `ANTHROPIC_API_KEY`
-**Examples:** [`examples/python/anthropic/`](https://github.com/substratum-labs/roche/tree/main/examples/python/anthropic)
+```bash
+pip install anthropic roche-sandbox
+ANTHROPIC_API_KEY=sk-ant-... python examples/python/anthropic/basic_tool.py
+```
 
 ## AutoGen
 
-Implement a custom `CodeExecutor`:
+Implement a custom `CodeExecutor` that routes execution through Roche:
 
 ```python
 from roche_sandbox import Roche
 
-class RocheCodeExecutor:
+roche = Roche()
+
+class RocheExecutor:
+    """AutoGen-compatible code executor using Roche sandboxes."""
+
     def execute_code_blocks(self, code_blocks):
-        roche = Roche()
-        sandbox = roche.create(image="python:3.12-slim")
-        try:
-            outputs = []
-            for lang, code in code_blocks:
-                cmd = ["python3", "-c", code] if lang.startswith("py") else ["sh", "-c", code]
-                result = sandbox.exec(cmd)
-                if result.exit_code != 0:
-                    return {"exit_code": result.exit_code, "output": result.stderr.strip()}
-                outputs.append(result.stdout.strip())
-            return {"exit_code": 0, "output": "\n".join(outputs)}
-        finally:
-            sandbox.destroy()
+        results = []
+        with roche.create(image="python:3.12-slim", writable=True) as sandbox:
+            for block in code_blocks:
+                output = sandbox.exec(["python3", "-c", block.code])
+                results.append(output)
+        return results
 ```
 
-Use with `AssistantAgent` + `UserProxyAgent` or in a `GroupChat` with planner/coder/reviewer agents.
-
-**Env var:** `OPENAI_API_KEY`
-**Examples:** [`examples/python/autogen/`](https://github.com/substratum-labs/roche/tree/main/examples/python/autogen)
+```bash
+pip install pyautogen roche-sandbox
+OPENAI_API_KEY=sk-... python examples/python/autogen/basic_executor.py
+```
 
 ## Camel-AI
 
-Build a toolkit:
+Create a `BaseToolkit` that exposes Roche to Camel's role-playing agents:
 
 ```python
 from roche_sandbox import Roche
 
+roche = Roche()
+
 class RocheToolkit:
+    """Camel-AI toolkit for sandbox code execution."""
+
     def execute_code(self, code: str) -> str:
-        roche = Roche()
-        sandbox = roche.create(image="python:3.12-slim")
-        try:
-            result = sandbox.exec(["python3", "-c", code])
-            return result.stdout.strip() if result.exit_code == 0 else result.stderr.strip()
-        finally:
-            sandbox.destroy()
-
-    def get_tools(self):
-        return [self.execute_code]
+        with roche.create(image="python:3.12-slim") as sandbox:
+            output = sandbox.exec(["python3", "-c", code])
+            return output.stdout if output.exit_code == 0 else output.stderr
 ```
 
-Use with `ChatAgent` or in `RolePlaying` sessions.
-
-**Env var:** `OPENAI_API_KEY`
-**Examples:** [`examples/python/camel/`](https://github.com/substratum-labs/roche/tree/main/examples/python/camel)
-
-## Using the `@roche_sandbox` Decorator
-
-Instead of manually managing sandbox lifecycle, use the `@roche_sandbox` decorator. It auto-creates and destroys a sandbox, and strips the `sandbox` parameter from the function signature so frameworks don't see it.
-
-### OpenAI Agents SDK
-
-```python
-from agents import Agent, Runner, function_tool
-from roche_sandbox import roche_sandbox
-
-@function_tool
-@roche_sandbox(image="python:3.12-slim")
-async def execute_code(code: str, sandbox) -> str:
-    """Execute Python code in a secure sandbox."""
-    result = await sandbox.exec(["python3", "-c", code])
-    return result.stdout.strip() if result.exit_code == 0 else result.stderr.strip()
-
-agent = Agent(name="Coder", tools=[execute_code])
+```bash
+pip install camel-ai roche-sandbox
+OPENAI_API_KEY=sk-... python examples/python/camel/basic_tool.py
 ```
 
-### LangChain
+## Integration Pattern
 
-```python
-from langchain_core.tools import tool
-from roche_sandbox import roche_sandbox
+The common pattern across all frameworks:
 
-@tool
-@roche_sandbox(image="python:3.12-slim")
-def sandbox_execute(code: str, sandbox) -> str:
-    """Execute Python code in a secure Roche sandbox."""
-    result = sandbox.exec(["python3", "-c", code])
-    return result.stdout.strip() if result.exit_code == 0 else result.stderr.strip()
-```
+1. **Create** a `Roche()` client
+2. **Wrap** sandbox creation in a context manager (`with`)
+3. **Expose** `sandbox.exec()` as a tool/function the agent can call
+4. **Return** stdout on success, stderr on failure
 
-### CrewAI
+Roche handles isolation, resource limits, and cleanup. Your framework handles tool registration, LLM routing, and agent orchestration.
 
-```python
-from crewai.tools import tool
-from roche_sandbox import roche_sandbox
+## Full Examples
 
-@tool("sandbox_execute")
-@roche_sandbox(image="python:3.12-slim")
-def sandbox_execute(code: str, sandbox) -> str:
-    """Execute Python code in a secure Roche sandbox."""
-    result = sandbox.exec(["python3", "-c", code])
-    return result.stdout.strip() if result.exit_code == 0 else result.stderr.strip()
-```
-
-:::tip
-The decorator approach eliminates boilerplate `try/finally` blocks. For simple one-shot tools, it's the recommended pattern.
-:::
-
-## Sandbox Lifecycle Tips
-
-- **Simple tools:** Use `@roche_sandbox` decorator — zero boilerplate.
-- **Basic tools (manual):** Create sandbox per call, destroy in `finally`. Simple and safe.
-- **Multi-step workflows:** Create sandbox once, reuse across calls, destroy at end. Better performance.
-- **Async frameworks:** Use `AsyncRoche`/`AsyncSandbox` to avoid `asyncio.run()` conflicts.
-- **File I/O:** Use `copy_to`/`copy_from` to transfer data in and out of the sandbox.
+Complete working examples (basic + advanced) for each framework are in the [examples directory](https://github.com/substratum-labs/roche/tree/main/examples/python).

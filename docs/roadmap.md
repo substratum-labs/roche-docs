@@ -1,37 +1,41 @@
 ---
-sidebar_position: 1
+sidebar_position: 100
 ---
 
 # Roadmap
 
-## Phase 1 — MVP (Complete)
+## Phase 1: MVP (Complete)
 
-- [x] Docker provider (create / exec / destroy / list)
-- [x] CLI with clap (`roche create`, `exec`, `destroy`, `list`)
-- [x] Python SDK (`roche-sandbox` on PyPI)
-- [x] AI-safe defaults (network off, readonly FS, timeout, PID limit)
-- [x] Integration tests
+Docker provider, CLI, and Python SDK are fully functional.
 
-## Phase 2 — Multi-Provider + Daemon (In Progress)
+| Milestone | Status | Features |
+|---|---|---|
+| Docker provider | Complete | create, exec, destroy, list, pause, unpause, copy, gc |
+| CLI | Complete | AI-safe defaults, resource limits, `gc` subcommand |
+| Python SDK | Complete | Sync + async clients, context manager, gRPC + CLI transport |
+| TypeScript SDK | Complete | Promise-based API, `using` support, gRPC + CLI transport |
+| gRPC daemon | Complete | Persistent daemon mode (`roched`) for high-throughput workloads |
+| Agent framework examples | Complete | OpenAI, LangChain, CrewAI, Anthropic, AutoGen, Camel-AI |
+| crates.io / PyPI publish | Complete | `roche-core`, `roche-cli` on crates.io; `roche-sandbox` on PyPI |
 
-- [x] gRPC daemon (`roched`) for persistent sandbox management
-- [x] Firecracker provider (microVM isolation)
-- [x] TypeScript SDK (`roche-sandbox` on npm)
-- [x] Enhanced Docker provider (pause/unpause, copy, garbage collection)
-- [ ] WASM provider (wasmtime) — experimental
-- [ ] Sandbox pooling (pre-warmed containers for reduced cold start)
+## Phase 2: Multi-Provider (Complete)
 
-## Phase 3 — Ecosystem Integration
+| Milestone | Status | Features |
+|---|---|---|
+| Enhanced Docker | Complete | File transfer, volume mounts, pause/unpause, timeout GC, batch ops |
+| Firecracker provider | Complete | MicroVM isolation via KVM, vsock exec, state directory management |
+| WASM provider | Complete | Wasmtime + WASI, AOT compilation, in-memory sandbox registry |
 
-- [ ] E2B provider (cloud-hosted Firecracker compatibility)
-- [ ] Kubernetes provider (pod-based sandboxes)
-- [ ] GPU passthrough support
-- [ ] OpenTelemetry metrics and tracing
-- [ ] MCP server (expose sandbox as Model Context Protocol tools)
+## Phase 3: Ecosystem (Planned)
 
-## Phase 4 — Production Hardening
+| Component | Priority | Description |
+|---|---|---|
+| Sandbox pooling | High | Pre-warmed sandbox pool to reduce cold-start latency |
+| E2B provider | Medium | Cloud-hosted Firecracker sandbox compatibility |
+| Kubernetes provider | Medium | Pod-based sandboxes for K8s infrastructure |
+| GPU support | Low | GPU passthrough for ML workloads |
+| OpenTelemetry | Low | Structured observability per sandbox operation |
 
-- [ ] Sandbox snapshot and restore
-- [ ] Multi-tenant resource quotas
-- [ ] Audit logging
-- [ ] Web dashboard for sandbox management
+## Status
+
+Roche is in active development. See the [GitHub repo](https://github.com/substratum-labs/roche) for latest progress.

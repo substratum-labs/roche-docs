@@ -4,7 +4,12 @@ sidebar_position: 1
 
 # Installation
 
-## CLI (Rust)
+## Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Rust](https://rustup.rs/) toolchain (for building the CLI from source)
+
+## CLI
 
 ### From source
 
@@ -14,12 +19,13 @@ cd roche
 cargo install --path crates/roche-cli
 ```
 
-### Prerequisites
+### From crates.io
 
-- [Rust](https://rustup.rs/) stable toolchain
-- [Docker](https://docs.docker.com/get-docker/) installed and running
+```bash
+cargo install roche-cli
+```
 
-Verify the installation:
+### Verify
 
 ```bash
 roche --help
@@ -28,26 +34,17 @@ roche --help
 ## Python SDK
 
 ```bash
-pip install roche-sandbox          # SDK only (requires Roche CLI installed separately)
-pip install roche-sandbox[cli]     # SDK + auto-download prebuilt CLI binary
+pip install roche-sandbox
 ```
 
-If you installed without `[cli]`, you can download the CLI later:
+Requirements: Python >= 3.10, Roche CLI on `PATH` (or Roche daemon running).
 
-```bash
-roche-install-cli                  # downloads from GitHub Releases
-cargo install roche-cli            # or build from source
-```
-
-Requires Python >= 3.10.
+### Verify
 
 ```python
 from roche_sandbox import Roche
-
 roche = Roche()
-sandbox = roche.create(image="python:3.12-slim")
-print(f"Sandbox created: {sandbox.id}")
-sandbox.destroy()
+print("roche-sandbox installed successfully")
 ```
 
 ## TypeScript SDK
@@ -56,11 +53,34 @@ sandbox.destroy()
 npm install roche-sandbox
 ```
 
+Requirements: Node.js >= 18, Roche CLI on `PATH` (or Roche daemon running).
+
+### Verify
+
 ```typescript
 import { Roche } from "roche-sandbox";
-
 const roche = new Roche();
-const sandbox = await roche.createSandbox({ image: "python:3.12-slim" });
-console.log(`Sandbox created: ${sandbox.id}`);
-await sandbox.destroy();
+console.log("roche-sandbox installed successfully");
+```
+
+## Development Setup
+
+To work on Roche itself:
+
+```bash
+git clone https://github.com/substratum-labs/roche.git
+cd roche
+
+# Rust
+cargo build              # Build all crates
+cargo test               # Run tests
+cargo clippy             # Lint
+cargo fmt --check        # Check formatting
+
+# Python SDK
+pip install -e "sdk/python[dev]"
+pytest sdk/python/tests/ -v
+
+# TypeScript SDK
+cd sdk/typescript && npm ci && npm run build
 ```

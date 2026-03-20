@@ -1,9 +1,8 @@
 ---
-sidebar_position: 1
-sidebar_label: API Reference
+sidebar_position: 6
 ---
 
-# Roche API Reference
+# API Reference
 
 ## CLI
 
@@ -26,10 +25,6 @@ roche create [OPTIONS]
 | `--writable` | flag | off | Enable writable filesystem |
 | `--env` | string | — | Environment variable `KEY=VALUE` (repeatable) |
 | `--mount` | string | — | Volume mount `host:container[:ro]` (repeatable) |
-| `--kernel` | string | — | Linux kernel path (Firecracker only) |
-| `--rootfs` | string | — | Root filesystem path (Firecracker only) |
-
-**Output:** Sandbox ID (string).
 
 ### `roche exec`
 
@@ -43,8 +38,6 @@ roche exec --sandbox <ID> [OPTIONS] -- <COMMAND...>
 |------|------|---------|-------------|
 | `--sandbox` | string | (required) | Sandbox ID |
 | `--timeout` | int | — | Timeout override in seconds |
-
-**Output:** stdout to stdout, stderr to stderr. Process exit code matches command exit code.
 
 ### `roche destroy`
 
@@ -84,8 +77,7 @@ roche gc [OPTIONS]
 ## Python SDK
 
 ```bash
-pip install roche-sandbox          # SDK only
-pip install roche-sandbox[cli]     # SDK + prebuilt CLI binary
+pip install roche-sandbox
 ```
 
 ### `Roche` (sync client)
@@ -103,8 +95,6 @@ roche = Roche(
 
 #### `roche.create(**kwargs) -> Sandbox`
 
-Create a sandbox and return a `Sandbox` handle.
-
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `provider` | `str \| None` | `None` (uses client default) | Override provider |
@@ -119,119 +109,36 @@ Create a sandbox and return a `Sandbox` handle.
 
 #### `roche.exec(sandbox_id, command, timeout_secs=None) -> ExecOutput`
 
-Execute a command in an existing sandbox by ID.
-
 #### `roche.destroy(sandbox_id) -> None`
-
-Destroy a sandbox by ID.
 
 #### `roche.list() -> list[SandboxInfo]`
 
-List all active sandboxes.
-
 #### `roche.gc(dry_run=False, all=False) -> list[str]`
-
-Garbage collect expired sandboxes. Returns list of destroyed sandbox IDs.
-
----
 
 ### `Sandbox` (sync handle)
 
-Returned by `roche.create()`. Supports context manager (`with` statement).
-
 ```python
-sandbox = roche.create(image="python:3.12-slim")
-
-# Properties
 sandbox.id        # str — sandbox ID
 sandbox.provider  # str — provider name
 
-# Methods
 sandbox.exec(command: list[str], timeout_secs: int | None = None) -> ExecOutput
 sandbox.pause() -> None
 sandbox.unpause() -> None
 sandbox.destroy() -> None
 sandbox.copy_to(host_path: str, sandbox_path: str) -> None
 sandbox.copy_from(sandbox_path: str, host_path: str) -> None
-
-# Context manager
-with roche.create(image="python:3.12-slim") as sandbox:
-    output = sandbox.exec(["echo", "hello"])
-# sandbox auto-destroyed
 ```
 
----
+### `AsyncRoche` / `AsyncSandbox`
 
-### `AsyncRoche` (async client)
-
-Async equivalent of `Roche`. Same constructor parameters.
-
-```python
-from roche_sandbox import AsyncRoche
-
-roche = AsyncRoche()
-sandbox = await roche.create(image="python:3.12-slim")
-output = await sandbox.exec(["echo", "hello"])
-await sandbox.destroy()
-```
-
-All methods are `async` versions of `Roche` methods.
-
-### `AsyncSandbox` (async handle)
-
-Async equivalent of `Sandbox`. Supports `async with`.
+Async equivalents with identical APIs. All methods are `async`.
 
 ```python
 async with await roche.create(image="python:3.12-slim") as sandbox:
     output = await sandbox.exec(["echo", "hello"])
 ```
 
----
-
-### `@roche_sandbox` Decorator
-
-Auto-creates a sandbox and injects it into the decorated function. The sandbox is destroyed after the function returns (or raises).
-
-```python
-from roche_sandbox import roche_sandbox
-
-@roche_sandbox(image="python:3.12-slim")
-def run_code(code: str, sandbox) -> str:
-    return sandbox.exec(["python3", "-c", code]).stdout
-
-output = run_code("print('hello')")  # sandbox is auto-managed
-```
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `image` | `str` | `"python:3.12-slim"` | Container image |
-| `provider` | `str` | `"docker"` | Sandbox provider |
-| `network` | `bool` | `False` | Enable network access |
-| `writable` | `bool` | `False` | Enable writable filesystem |
-| `timeout_secs` | `int` | `300` | Sandbox timeout |
-| `memory` | `str \| None` | `None` | Memory limit |
-| `cpus` | `float \| None` | `None` | CPU limit |
-| `sandbox_param` | `str` | `"sandbox"` | Name of the injected parameter |
-
-**Behavior:**
-
-- Detects sync vs async functions automatically — uses `Roche` or `AsyncRoche` accordingly.
-- Strips the `sandbox` parameter from `__signature__` so agent framework introspection (e.g. OpenAI `@function_tool`, LangChain `@tool`) does not expose it as a user-facing argument.
-- Stacks with framework decorators:
-
-```python
-@function_tool
-@roche_sandbox(image="python:3.12-slim")
-def run_code(code: str, sandbox) -> str:
-    """Execute Python code safely."""
-    return sandbox.exec(["python3", "-c", code]).stdout
-```
-
----
-
 ### Types
-
-#### `SandboxConfig`
 
 ```python
 @dataclass
@@ -241,77 +148,44 @@ class SandboxConfig:
     memory: str | None = None
     cpus: float | None = None
     timeout_secs: int = 300
-    network: bool = False          # AI-safe default
-    writable: bool = False         # AI-safe default
+    network: bool = False
+    writable: bool = False
     env: dict[str, str] = field(default_factory=dict)
     mounts: list[Mount] = field(default_factory=list)
-    kernel: str | None = None      # Firecracker only
-    rootfs: str | None = None      # Firecracker only
-```
 
-#### `ExecOutput`
-
-```python
 @dataclass
 class ExecOutput:
     exit_code: int
     stdout: str
     stderr: str
-```
 
-#### `SandboxInfo`
-
-```python
 @dataclass
 class SandboxInfo:
     id: str
-    status: SandboxStatus    # "running" | "paused" | "stopped" | "failed"
+    status: SandboxStatus
     provider: str
     image: str
     expires_at: int | None = None
-```
 
-#### `Mount`
-
-```python
 @dataclass
 class Mount:
     host_path: str
     container_path: str
-    readonly: bool = True    # AI-safe default
-```
+    readonly: bool = True
 
-#### `SandboxStatus`
-
-```python
 SandboxStatus = Literal["running", "paused", "stopped", "failed"]
 ```
 
----
-
 ### Errors
-
-All errors inherit from `RocheError`.
 
 | Exception | When |
 |-----------|------|
 | `RocheError` | Base exception for all Roche errors |
 | `SandboxNotFound` | Sandbox ID does not exist |
 | `SandboxPaused` | Operation attempted on a paused sandbox |
-| `ProviderUnavailable` | Provider not installed or not running (e.g. Docker not available) |
+| `ProviderUnavailable` | Provider not installed or not running |
 | `TimeoutError` | Operation exceeded timeout |
 | `UnsupportedOperation` | Provider does not support requested operation |
-
-```python
-from roche_sandbox import RocheError, SandboxNotFound
-
-try:
-    sandbox.exec(["echo", "hello"])
-except SandboxNotFound:
-    print("Sandbox was destroyed")
-except RocheError as e:
-    print(f"Roche error: {e}")
-```
 
 ---
 
@@ -324,13 +198,11 @@ npm install roche-sandbox
 ### `Roche`
 
 ```typescript
-import { Roche } from "roche-sandbox";
-
 const roche = new Roche({
   mode?: "auto" | "direct",
   daemonPort?: number,
-  provider?: string,      // default: "docker"
-  binary?: string,        // default: "roche"
+  provider?: string,
+  binary?: string,
 });
 ```
 
@@ -345,8 +217,6 @@ const roche = new Roche({
 ### `Sandbox`
 
 ```typescript
-const sandbox = await roche.createSandbox({ image: "python:3.12-slim" });
-
 sandbox.id: string;
 sandbox.provider: string;
 
@@ -365,13 +235,13 @@ await using sandbox = await roche.createSandbox();
 
 ```typescript
 interface SandboxConfig {
-  provider?: string;          // default: "docker"
-  image?: string;             // default: "python:3.12-slim"
+  provider?: string;
+  image?: string;
   memory?: string;
   cpus?: number;
-  timeoutSecs?: number;       // default: 300
-  network?: boolean;          // default: false
-  writable?: boolean;         // default: false
+  timeoutSecs?: number;
+  network?: boolean;
+  writable?: boolean;
   env?: Record<string, string>;
   mounts?: Mount[];
 }
@@ -384,7 +254,7 @@ interface ExecOutput {
 
 interface SandboxInfo {
   id: string;
-  status: SandboxStatus;      // "running" | "paused" | "stopped" | "failed"
+  status: SandboxStatus;
   provider: string;
   image: string;
   expiresAt?: number;
@@ -393,7 +263,7 @@ interface SandboxInfo {
 interface Mount {
   hostPath: string;
   containerPath: string;
-  readonly?: boolean;         // default: true
+  readonly?: boolean;
 }
 
 type SandboxStatus = "running" | "paused" | "stopped" | "failed";
@@ -402,10 +272,6 @@ type SandboxStatus = "running" | "paused" | "stopped" | "failed";
 ### Errors
 
 All errors extend `RocheError`.
-
-```typescript
-import { RocheError, SandboxNotFound } from "roche-sandbox";
-```
 
 | Error | When |
 |-------|------|
@@ -425,7 +291,7 @@ import { RocheError, SandboxNotFound } from "roche-sandbox";
 roche-core = "0.1"
 ```
 
-### `SandboxProvider` trait
+### Traits
 
 ```rust
 pub trait SandboxProvider {
@@ -434,20 +300,12 @@ pub trait SandboxProvider {
     async fn destroy(&self, id: &SandboxId) -> Result<(), ProviderError>;
     async fn list(&self) -> Result<Vec<SandboxInfo>, ProviderError>;
 }
-```
 
-### `SandboxFileOps` trait
-
-```rust
 pub trait SandboxFileOps {
     async fn copy_to(&self, id: &SandboxId, src: &Path, dest: &str) -> Result<(), ProviderError>;
     async fn copy_from(&self, id: &SandboxId, src: &str, dest: &Path) -> Result<(), ProviderError>;
 }
-```
 
-### `SandboxLifecycle` trait
-
-```rust
 pub trait SandboxLifecycle {
     async fn pause(&self, id: &SandboxId) -> Result<(), ProviderError>;
     async fn unpause(&self, id: &SandboxId) -> Result<(), ProviderError>;
@@ -472,8 +330,8 @@ pub enum ProviderError {
 
 ### Available Providers
 
-| Provider | Struct | Feature Flag |
-|----------|--------|-------------|
-| Docker | `docker::DockerProvider` | (default) |
-| Firecracker | `firecracker::FirecrackerProvider` | (default) |
-| WASM | `wasm::WasmProvider` | `wasmtime` |
+| Provider | Struct | Status |
+|----------|--------|--------|
+| Docker | `docker::DockerProvider` | Stable |
+| Firecracker | `firecracker::FirecrackerProvider` | Stable |
+| WASM | `wasm::WasmProvider` | Stable (feature: `wasmtime`) |

@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # What is Roche?
 
-**Roche** is a universal sandbox orchestrator for AI agents. It provides a single abstraction (`create` / `exec` / `destroy`) over multiple sandbox providers with **AI-optimized security defaults** — network disabled, filesystem readonly, timeout enforced.
+**Roche** is a universal sandbox orchestrator for AI agents. It provides a single abstraction (`create` / `exec` / `destroy`) over multiple sandbox providers (Docker, Firecracker, WASM) with **AI-optimized security defaults** — network disabled, filesystem readonly, timeout enforced.
 
 > Named after [Édouard Roche](https://en.wikipedia.org/wiki/%C3%89douard_Roche) — the Roche limit is the inviolable physical boundary for celestial bodies; Roche is the inviolable execution boundary for code.
 
@@ -26,13 +26,16 @@ CrewAI   ───┤── Roche() ───├── Firecracker
 AutoGen  ───┘              └── WASM
 ```
 
+Frameworks integrate once with Roche. Roche handles the provider abstraction internally. Switching providers is a one-line config change.
+
 ## Features
 
 - **AI-safe defaults** — network off, readonly filesystem, 300s timeout
 - **Multi-provider** — Docker, Firecracker, WASM behind a unified API
 - **CLI + SDKs** — `roche` binary + Python & TypeScript SDKs
-- **Framework-agnostic** — works with LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Anthropic API, Camel-AI
-- **Zero config** — sensible defaults, opt-in for permissions
+- **Resource limits** — memory, CPU, PID limits, timeout enforcement
+- **Zero config** — sensible defaults, opt-in for dangerous capabilities
+- **gRPC daemon** — persistent daemon mode for high-throughput workloads
 
 ## Quick Example
 
@@ -60,7 +63,7 @@ Operators can use both, either, or neither. Castor manages *what tools an agent 
 
 ## Next Steps
 
-- [Installation](./getting-started/installation) — install the CLI and SDKs
-- [Quickstart](./getting-started/quickstart) — create and run a sandbox in 2 minutes
-- [Core Concepts](./getting-started/concepts) — understand providers, security defaults, and transport
+- [Installation](./getting-started/installation) — install the CLI, Python SDK, or TypeScript SDK
+- [Quickstart](./getting-started/quickstart) — create your first sandbox in 2 minutes
+- [Core Concepts](./getting-started/concepts) — providers, security defaults, transport modes
 - [Framework Integration](./guides/framework-integration) — use Roche with your agent framework

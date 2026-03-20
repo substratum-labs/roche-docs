@@ -4,68 +4,121 @@ sidebar_position: 3
 
 # Core Concepts
 
-## Sandbox
+## Sandbox Lifecycle
 
-A sandbox is an isolated execution environment. It has:
+Every sandbox follows a simple lifecycle:
 
-- A **unique ID** (e.g., `abc123def456`)
-- A **container image** (e.g., `python:3.12-slim`)
-- **Security constraints** (network, filesystem, timeout)
-- A **lifecycle**: created → running → destroyed
-
-Sandboxes are long-lived — you create one, execute multiple commands, then destroy it.
-
-## Provider
-
-A provider is a backend that implements sandbox isolation. Roche currently supports:
-
-| Provider | Isolation Level | Startup Time | Status |
-|----------|----------------|-------------|--------|
-| **Docker** | Container | ~2s | Stable |
-| **Firecracker** | MicroVM | ~125ms | Available |
-| **WASM** | Language-level | ~1ms | Experimental |
-
-All providers implement the same `SandboxProvider` trait, so switching providers is a one-line change:
-
-```bash
-roche create --provider docker      # Container isolation
-roche create --provider firecracker  # MicroVM isolation
+```
+create → exec (repeatable) → destroy
 ```
 
-## AI-Safe Defaults
+- **Create** — launch an isolated environment, get back a sandbox ID
+- **Exec** — run commands inside the sandbox (repeatable)
+- **Destroy** — tear down the sandbox and free resources
 
-Roche is built for AI agent workloads where **untrusted code execution is the norm**. Every sandbox starts locked down:
+Additional lifecycle operations:
 
-| Setting | Default | Override | Why |
-|---------|---------|----------|-----|
-| Network | **off** | `--network` | Prevent data exfiltration, C2 communication |
-| Filesystem | **readonly** | `--writable` | Prevent persistent compromise |
-| Timeout | **300s** | `--timeout` | Prevent resource exhaustion |
+- **Pause / Unpause** — suspend and resume a sandbox without destroying it
+- **Copy To / Copy From** — transfer files between host and sandbox
+- **GC** — garbage collect expired sandboxes
+
+## Providers
+
+A **provider** is a sandbox backend. Roche abstracts over multiple providers through the `SandboxProvider` trait:
+
+| Provider | Isolation Level | Status | Use Case |
+|----------|----------------|--------|----------|
+| **Docker** | Container | Stable | General purpose, development, CI |
+| **Firecracker** | MicroVM | Stable | Production, multi-tenant, strong isolation |
+| **WASM** | Language sandbox | Stable | Ultra-fast startup, lightweight tasks |
+
+All providers implement the same interface. Switching providers is a one-line change:
+
+```bash
+roche create --provider docker    # container isolation
+roche create --provider firecracker  # microVM isolation
+```
+
+## Security Defaults
+
+Roche is designed for AI agent workloads where **untrusted code execution is the norm**. Every sandbox starts locked down:
+
+| Setting | Default | Override | Rationale |
+|---------|---------|----------|-----------|
+| Network | **disabled** | `--network` | Prevent data exfiltration and C2 communication |
+| Filesystem | **readonly** | `--writable` | Prevent persistent compromise and file tampering |
+| Timeout | **300s** | `--timeout` | Prevent resource exhaustion and infinite loops |
 | PID limit | **256** | — | Prevent fork bombs |
 | Privileges | **no-new-privileges** | — | Prevent privilege escalation |
 
-The philosophy is **deny by default, opt-in explicitly**. If an agent needs network access, the operator must say so — there are no "smart defaults" that guess.
+Capabilities must be **explicitly granted**, never implicitly available. This is the opposite of typical Docker defaults.
 
-## Transport
+## Transport Modes
 
-The Python and TypeScript SDKs communicate with Roche through a **transport layer**:
+The SDKs support two transport modes for communicating with the Roche backend:
 
-1. **gRPC transport** — connects to the Roche daemon (`roched`) for best performance
-2. **CLI transport** — falls back to invoking `roche` as a subprocess
+### CLI Mode (Direct)
 
-Transport selection is automatic: if the daemon is running, the SDK uses gRPC. Otherwise, it falls back to CLI. You can force CLI mode:
+The SDK invokes the `roche` CLI binary as a subprocess for each operation. Simple, no daemon required.
 
 ```python
-roche = Roche(mode="direct")  # Always use CLI subprocess
+roche = Roche(mode="direct")  # force CLI mode
 ```
 
-## Relationship to Castor
+### Daemon Mode (gRPC)
 
-Roche and [Castor](https://substratum-labs.github.io/castor-docs/) are orthogonal:
+The Roche daemon (`roched`) runs as a persistent gRPC server. The SDK connects over gRPC for lower latency and connection pooling.
 
-| Layer | Tool | Purpose |
-|-------|------|---------|
-| **Logical security** | Castor | Capability budgets, HITL approval, checkpoint/replay |
-| **Physical security** | Roche | Process/container/VM isolation |
+```bash
+# Start the daemon
+roched --port 50051
 
-An operator can use both, either, or neither. Castor manages *what tools an agent can call*. Roche manages *what system resources that tool code can access*.
+# SDK auto-detects the daemon
+roche = Roche()  # mode="auto" by default
+```
+
+### Auto Mode (Default)
+
+By default, the SDK uses `mode="auto"` — it tries to connect to the gRPC daemon first, and falls back to CLI mode if the daemon is unavailable.
+
+## Resource Limits
+
+Sandboxes can be constrained with resource limits:
+
+```bash
+roche create \
+  --memory 512m \     # Memory limit (e.g. 512m, 1g)
+  --cpus 0.5 \        # CPU limit (e.g. 0.5, 1.0, 2.0)
+  --timeout 60        # Timeout in seconds
+```
+
+```python
+sandbox = roche.create(
+    memory="512m",
+    cpus=0.5,
+    timeout_secs=60,
+)
+```
+
+## Environment Variables and Mounts
+
+Pass environment variables and mount host directories into sandboxes:
+
+```bash
+roche create --env API_KEY=secret --env DEBUG=1
+```
+
+```python
+sandbox = roche.create(
+    env={"API_KEY": "secret", "DEBUG": "1"},
+    mounts=[Mount(host_path="./data", container_path="/data", readonly=True)],
+)
+```
+
+Mounts are readonly by default — consistent with the AI-safe philosophy.
+
+## Next Steps
+
+- [Architecture](../architecture/overview) — how Roche is structured internally
+- [Python SDK Guide](../guides/python-sdk) — detailed Python API walkthrough
+- [Security Model](../architecture/security-model) — deep dive into the security model

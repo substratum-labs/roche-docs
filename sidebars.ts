@@ -28,13 +28,10 @@ const sidebars: SidebarsConfig = {
         'guides/python-sdk',
         'guides/typescript-sdk',
         'guides/framework-integration',
+        'guides/examples',
       ],
     },
-    {
-      type: 'category',
-      label: 'Reference',
-      items: ['api-reference'],
-    },
+    'api-reference',
     'roadmap',
     {
       type: 'link',

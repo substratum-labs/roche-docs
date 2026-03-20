@@ -4,16 +4,15 @@ sidebar_position: 2
 
 # Quickstart
 
-Create a sandbox, execute code, and clean up — in under 2 minutes.
+Create a sandbox, run code, and clean up — in under 2 minutes.
 
 ## CLI
 
 ```bash
 # Create a sandbox (network off, readonly FS by default)
 SANDBOX_ID=$(roche create --provider docker --memory 512m)
-echo "Created: $SANDBOX_ID"
 
-# Execute code
+# Execute code in the sandbox
 roche exec --sandbox $SANDBOX_ID python3 -c "print('Hello from Roche!')"
 
 # List active sandboxes
@@ -30,26 +29,20 @@ from roche_sandbox import Roche
 
 roche = Roche()
 
-# Create — AI-safe defaults (no network, readonly FS)
-sandbox = roche.create(image="python:3.12-slim")
-print(f"Created: {sandbox.id}")
-
-# Execute
+# Create and use a sandbox
+sandbox = roche.create(image="python:3.12-slim", memory="512m")
 output = sandbox.exec(["python3", "-c", "print('Hello from Roche!')"])
-print(f"stdout: {output.stdout.strip()}")
-print(f"exit code: {output.exit_code}")
-
-# Clean up
+print(output.stdout)  # Hello from Roche!
 sandbox.destroy()
 ```
 
-### Context Manager (auto-cleanup)
+### Context manager (auto-cleanup)
 
 ```python
 with roche.create(image="python:3.12-slim") as sandbox:
-    output = sandbox.exec(["echo", "hello"])
-    print(output.stdout)
-# sandbox auto-destroyed
+    result = sandbox.exec(["echo", "hello"])
+    print(result.stdout)
+# sandbox automatically destroyed
 ```
 
 ### Async API
@@ -61,7 +54,7 @@ from roche_sandbox import AsyncRoche
 async def main():
     roche = AsyncRoche()
     async with await roche.create(image="python:3.12-slim") as sandbox:
-        output = await sandbox.exec(["python3", "-c", "print('async hello')"])
+        output = await sandbox.exec(["echo", "hello"])
         print(output.stdout)
 
 asyncio.run(main())
@@ -73,27 +66,31 @@ asyncio.run(main())
 import { Roche } from "roche-sandbox";
 
 const roche = new Roche();
-
-// Auto-cleanup with `using` (TC39 Explicit Resource Management)
-await using sandbox = await roche.createSandbox({ image: "python:3.12-slim" });
+const sandbox = await roche.createSandbox({ image: "python:3.12-slim" });
 const output = await sandbox.exec(["python3", "-c", "print('Hello!')"]);
-console.log(output.stdout);
+console.log(output.stdout); // Hello!
+await sandbox.destroy();
+```
+
+### Auto-cleanup with `using` (TypeScript >= 5.2)
+
+```typescript
+await using sandbox = await roche.createSandbox();
+await sandbox.exec(["echo", "hello"]);
+// sandbox.destroy() called automatically
 ```
 
 ## What Just Happened?
 
-1. **Create** — Roche launched a Docker container with AI-safe defaults:
-   - Network disabled (no outbound connections)
-   - Filesystem readonly (no persistent writes)
-   - 300s timeout (auto-destroyed if idle)
-   - PID limit 256 (fork bomb protection)
+1. `create` launched a Docker container with AI-safe defaults (no network, readonly filesystem, 300s timeout)
+2. `exec` ran a command inside the isolated sandbox
+3. `destroy` removed the container and freed resources
 
-2. **Exec** — Your command ran inside the isolated container. stdout/stderr were captured and returned.
-
-3. **Destroy** — The container was stopped and removed. No trace left on the host.
+No network access, no filesystem writes, no privilege escalation — unless you explicitly opt in.
 
 ## Next Steps
 
-- [Core Concepts](./concepts) — understand providers, security defaults, and transport
-- [Python SDK Guide](../guides/python-sdk) — full SDK documentation
+- [Core Concepts](./concepts) — understand providers, security model, and transport
+- [Python SDK Guide](../guides/python-sdk) — full Python SDK walkthrough
+- [TypeScript SDK Guide](../guides/typescript-sdk) — full TypeScript SDK walkthrough
 - [Framework Integration](../guides/framework-integration) — use Roche with LangChain, CrewAI, etc.
